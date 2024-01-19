@@ -87,4 +87,30 @@ exports.getUserData = async (req, res) => {
 
 exports.login = async (req, res) => {
   // Implement login logic here
+
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid username" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    // If username and password are valid, generate an access token
+    // const accessToken = generateAccessToken(user._id);
+
+    res
+      .status(200)
+      .json({ message: "Login successful", /* accessToken, */ user });
+  } catch (error) {
+    console.error("Error during login:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
