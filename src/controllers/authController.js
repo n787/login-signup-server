@@ -1,6 +1,7 @@
 // authController.js
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
+const jwt = require("jsonwebtoken"); // Import the jsonwebtoken library
 
 exports.signup = async (req, res) => {
   // Implement signup logic here
@@ -38,12 +39,17 @@ exports.signup = async (req, res) => {
     });
 
     // Save the user to the database
-    await newUser.save();
+    const saved_user = await newUser.save();
 
-    res.status(201).json({ message: "User registered successfully" });
+    // Generate an access token
+    // const accessToken = generateAccessToken(newUser._id);
+
+    res
+      .status(201)
+      .json({ message: "User registered successfully", saved_user });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: error });
   }
 };
 
@@ -53,6 +59,30 @@ const isValidPassword = (password) => {
   const passwordRegex =
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
   return passwordRegex.test(password);
+};
+
+// Helper function to generate an access token
+const generateAccessToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "1h" }); // Replace process.env.JWT_SECRET with your own secret key
+};
+
+exports.getUserData = async (req, res) => {
+  try {
+    // Assuming you have implemented some form of user authentication middleware
+    const userId = req.user.id;
+
+    // Fetch user data from the database
+    const userData = await User.findById(userId);
+
+    if (!userData) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(userData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 exports.login = async (req, res) => {
